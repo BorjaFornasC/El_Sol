@@ -75,6 +75,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -88,59 +89,71 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ElSolTheme {
-                val snackBarState = remember { SnackbarHostState() }
-                var drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-                val scope = rememberCoroutineScope()
                 val navController = rememberNavController()
                 NavHost(navController = navController, startDestination = "MainActivity") {
-                    composable("MainActivity") {}
-                    composable("Filled.Build") {MainActivity()}
-                    composable("Filled.Info") { info() }
-                    composable("Filled.Email") { email() }
-                }
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    bottomBar = {MyBottomAppBar(scope, drawerState)},
-                    containerColor = MaterialTheme.colorScheme.background,
-                    snackbarHost = { SnackbarHost(hostState = snackBarState)}
-                ) {
-                    val items = listOf(Icons.Default.Build, Icons.Default.Info,
-                        Icons.Default.Email)
-                    val selectedItem = remember {
-                        mutableStateOf(items[0])
-                    }
-
-                    ModalNavigationDrawer(drawerContent = { 
-                        ModalDrawerSheet {
-                            Image(painter = painterResource(id = R.drawable.erupcionsolar),
-                                contentDescription = "Imagen",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(220.dp),
-                                contentScale = ContentScale.Crop)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            items.forEach {item ->
-                                NavigationDrawerItem(
-                                    icon = {Icon(imageVector = item, contentDescription = null)},
-                                    label = { Text(item.name.substringAfter("."))},
-                                    selected = item == selectedItem.value,
-                                    onClick = { scope.launch { drawerState.close() }
-                                                selectedItem.value = item
-                                                navController.navigate(item.name)
-                                              },
-                                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
-                            }
-                            }
-
-                    }, drawerState = drawerState, content = {
-
-                        Box(modifier = Modifier.padding(bottom = it.calculateBottomPadding())){
-                            SolView(snackbarHostState = snackBarState)
-                        }
-                    })
+                    composable("MainActivity") { mainReal(navHostController = navController)}
+                    composable("Filled.Build") { mainReal(navHostController = navController)}
+                    composable("Filled.Info") { info(navController) }
+                    composable("Filled.Email") { email(navController) }
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun mainReal(navHostController: NavHostController) {
+    val snackBarState = remember { SnackbarHostState() }
+    var drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {MyBottomAppBar(scope, drawerState)},
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(hostState = snackBarState)}
+    ) {
+        val items = listOf(
+            Icons.Default.Build, Icons.Default.Info,
+            Icons.Default.Email
+        )
+        val selectedItem = remember {
+            mutableStateOf(items[0])
+        }
+
+        ModalNavigationDrawer(drawerContent = {
+            ModalDrawerSheet {
+                Image(
+                    painter = painterResource(id = R.drawable.erupcionsolar),
+                    contentDescription = "Imagen",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                items.forEach { item ->
+                    NavigationDrawerItem(
+                        icon = { Icon(imageVector = item, contentDescription = null) },
+                        label = { Text(item.name.substringAfter(".")) },
+                        selected = item == selectedItem.value,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            selectedItem.value = item
+                            navHostController.navigate(item.name)
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                }
+            }
+
+        }, drawerState = drawerState, content = {
+
+            Box(modifier = Modifier.padding(bottom = it.calculateBottomPadding())) {
+                SolView(snackbarHostState = snackBarState)
+            }
+        })
     }
 }
 
